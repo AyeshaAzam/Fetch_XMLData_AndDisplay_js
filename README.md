@@ -1,3 +1,7 @@
+# To run the application, use live server and open the index.html file.
+
+`--------------------------------------------------------------------------------`
+
 ### What means the #text nodeName : ` these are the empty line breaks that you have unintentionally introduced in your markup.Use children instead of childNodes if you don't want to include text nodes. Whitespace inside elements is considered as text, and text is considered as nodes.`
 
 ### Fetch multiple Urls / using axios to fetch multiple urls: `https://www.codegrepper.com/code-examples/javascript/using+axios+to+fetch+multiple+urls`
