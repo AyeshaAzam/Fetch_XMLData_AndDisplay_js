@@ -47,20 +47,20 @@ const getAllNewsFromRssFeeds = (newsFeeds) => {
 // for sort:
 const sortNewsByPublishDate = () => {
   newsItemsArr.sort(function (a, b) {
-    let date1 = new Date(a.getElementsByTagName("pubDate")[0].innerHTML);
-    let date2 = new Date(b.getElementsByTagName("pubDate")[0].innerHTML);
+    let date1 = new Date(a.querySelector("pubDate").innerHTML);
+    let date2 = new Date(b.querySelector("pubDate").innerHTML);
     return date1 == date2 ? 0 : date1 < date2 ? 1 : -1;
   });
 };
 
-const removeDublicateNews = () => {
+const getAllNewsWithUniqueGuid = () => {
   let uniqueNewsList = [];
   newsItemsArr.forEach((newsItem) => {
     var containsInUniqueList = false;
     for (let i = 0; i < uniqueNewsList.length; i++) {
       if (
-        uniqueNewsList[i].getElementsByTagName("guid")[0].innerHTML ===
-        newsItem.getElementsByTagName("guid")[0].innerHTML
+        uniqueNewsList[i].querySelector("guid").innerHTML ===
+        newsItem.querySelector("guid").innerHTML
       ) {
         containsInUniqueList = true;
       }
@@ -98,7 +98,7 @@ const displayTenLatestNews = async () => {
     let res = await fetchAllRssFeeds();
     getAllNewsFromRssFeeds(res);
     sortNewsByPublishDate();
-    newsItemsArr = removeDublicateNews();
+    newsItemsArr = getAllNewsWithUniqueGuid();
     let tenLatestNews = Array.prototype.slice.call(newsItemsArr).slice(0, 10);
     displayNews(tenLatestNews);
   } catch (error) {
