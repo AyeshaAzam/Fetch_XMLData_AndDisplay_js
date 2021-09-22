@@ -1,68 +1,51 @@
-var newsItemsArr = [];
+const fetchOneRssFeed = (url) => {
+  return fetch(url).then(response => response.text());
+}
 
 const fetchAllRssFeeds = async () => {
-  const one = "https://www.dn.se/rss/";
-  const two = "https://www.dn.se/rss/kultur/";
-  const three = "https://www.dn.se/rss/sport/";
-  const four = "https://www.dn.se/rss/debatt/";
-  const five = "https://feeds.expressen.se/nyheter";
-  const six = "https://feeds.expressen.se/noje";
-  const seven = "https://feeds.expressen.se/motor";
-  const eight = "https://feeds.expressen.se/gt/ledare";
-  const nine = "https://feeds.expressen.se/kvp/kultur";
-  const ten = "https://www.di.se/rss";
+  const feedList = await fetch("./feed.json").then(response => response.json());
 
-  return await Promise.all([
-    axios.get(one),
-    axios.get(two),
-    axios.get(three),
-    axios.get(four),
-    axios.get(five),
-    axios.get(six),
-    axios.get(seven),
-    axios.get(eight),
-    axios.get(nine),
-    axios.get(ten),
-  ]);
+  return Promise.all(feedList.feeds.map(fetchOneRssFeed));
+};
+
+const getAllNewsFromOneRssFeed = (newsFeed) => {
+  const parser = new DOMParser();
+  const xmlDoc = parser.parseFromString(newsFeed, "text/xml");
+  return Array.from(xmlDoc
+    .getElementsByTagName("channel")[0]
+    .querySelectorAll("item"))
+    .filter(item => item.nodeType === 1)
+    .map(item => {
+      return {
+        pubDate: item.querySelector("pubDate").innerHTML,
+        guid: item.querySelector("guid").innerHTML,
+        title: item.querySelector("title").innerHTML,
+        link: item.querySelector("link").innerHTML
+      };
+    }); // Get rid of the whitespace text nodes
 };
 
 const getAllNewsFromRssFeeds = (newsFeeds) => {
-  newsFeeds.map((newItem) => {
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(newItem.data, "text/xml");
-    let newsItemList = xmlDoc
-      .getElementsByTagName("channel")[0]
-      .querySelectorAll("item");
-
-    // Sort and push into new Array
-    for (var i in newsItemList) {
-      if (newsItemList[i].nodeType == 1) {
-        // get rid of the whitespace text nodes
-        newsItemsArr.push(newsItemList[i]);
-      }
-    }
-  });
+  return newsFeeds.flatMap(getAllNewsFromOneRssFeed);
 };
 
 // for sort:
-const sortNewsByPublishDate = () => {
-  newsItemsArr.sort(function (a, b) {
-    let date1 = new Date(a.querySelector("pubDate").innerHTML);
-    let date2 = new Date(b.querySelector("pubDate").innerHTML);
-    return date1 == date2 ? 0 : date1 < date2 ? 1 : -1;
-  });
+const sortNewsByPublishDate = (a, b) => {
+  let date1 = new Date(a.pubDate);
+  let date2 = new Date(b.pubDate);
+  return date1 == date2 ? 0 : date1 < date2 ? 1 : -1;
 };
 
-const getAllNewsWithUniqueGuid = () => {
+const getAllNewsWithUniqueGuid = (items) => {
   let uniqueNewsList = [];
-  newsItemsArr.forEach((newsItem) => {
+  items.forEach((newsItem) => {
     var containsInUniqueList = false;
     for (let i = 0; i < uniqueNewsList.length; i++) {
       if (
-        uniqueNewsList[i].querySelector("guid").innerHTML ===
-        newsItem.querySelector("guid").innerHTML
+        uniqueNewsList[i].guid === newsItem.guid
       ) {
         containsInUniqueList = true;
+        break;
       }
     }
 
@@ -81,9 +64,9 @@ const displayNews = (tenLatestNews) => {
     // newsLink.style.whiteSpace = "nowrap";
 
     newsLink.style.textDecoration = "none";
-    newsLink.href = item.querySelector("link").innerHTML;
+    newsLink.href = item.link;
     newsLink.target = "_blank";
-    newsLink.innerHTML = item.querySelector("title").innerHTML;
+    newsLink.innerHTML = item.title;
 
     let para = document.createElement("p");
     para.innerHTML = `${index + 1}. \xa0\xa0 `;
@@ -96,10 +79,10 @@ const displayNews = (tenLatestNews) => {
 const displayTenLatestNews = async () => {
   try {
     let res = await fetchAllRssFeeds();
-    getAllNewsFromRssFeeds(res);
-    sortNewsByPublishDate();
-    newsItemsArr = getAllNewsWithUniqueGuid();
-    let tenLatestNews = Array.prototype.slice.call(newsItemsArr).slice(0, 10);
+    const news = getAllNewsFromRssFeeds(res);
+    news.sort(sortNewsByPublishDate);
+    const uniqueItems = getAllNewsWithUniqueGuid(news);
+    let tenLatestNews = uniqueItems.slice(0, 10);
     displayNews(tenLatestNews);
   } catch (error) {
     console.log("Error fetching data", error);
