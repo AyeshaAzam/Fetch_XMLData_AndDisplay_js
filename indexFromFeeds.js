@@ -1,35 +1,19 @@
 var newsItemsArr = [];
 
-const fetchAllRssFeeds = async () => {
-  const one = "https://www.dn.se/rss/";
-  const two = "https://www.dn.se/rss/kultur/";
-  const three = "https://www.dn.se/rss/sport/";
-  const four = "https://www.dn.se/rss/debatt/";
-  const five = "https://feeds.expressen.se/nyheter";
-  const six = "https://feeds.expressen.se/noje";
-  const seven = "https://feeds.expressen.se/motor";
-  const eight = "https://feeds.expressen.se/gt/ledare";
-  const nine = "https://feeds.expressen.se/kvp/kultur";
-  const ten = "https://www.di.se/rss";
+const fetchOneRssFeed = (url) => {
+  return fetch(url).then(response => response.text());
+}
 
-  return await Promise.all([
-    axios.get(one),
-    axios.get(two),
-    axios.get(three),
-    axios.get(four),
-    axios.get(five),
-    axios.get(six),
-    axios.get(seven),
-    axios.get(eight),
-    axios.get(nine),
-    axios.get(ten),
-  ]);
+const fetchAllRssFeeds = async () => {
+  const feedList = await fetch("./feed.json").then(response => response.json());
+
+  return Promise.all(feedList.feeds.map(fetchOneRssFeed));
 };
 
 const getAllNewsFromRssFeeds = (newsFeeds) => {
   newsFeeds.map((newItem) => {
     const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(newItem.data, "text/xml");
+    const xmlDoc = parser.parseFromString(newItem, "text/xml");
     let newsItemList = xmlDoc
       .getElementsByTagName("channel")[0]
       .querySelectorAll("item");
