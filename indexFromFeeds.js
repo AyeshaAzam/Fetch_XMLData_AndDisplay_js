@@ -14,7 +14,15 @@ const getAllNewsFromOneRssFeed = (newsFeed) => {
   return Array.from(xmlDoc
     .getElementsByTagName("channel")[0]
     .querySelectorAll("item"))
-    .filter(item => item.nodeType === 1); // Get rid of the whitespace text nodes
+    .filter(item => item.nodeType === 1)
+    .map(item => {
+      return {
+        pubDate: item.querySelector("pubDate").innerHTML,
+        guid: item.querySelector("guid").innerHTML,
+        title: item.querySelector("title").innerHTML,
+        link: item.querySelector("link").innerHTML
+      };
+    }); // Get rid of the whitespace text nodes
 };
 
 const getAllNewsFromRssFeeds = (newsFeeds) => {
@@ -23,8 +31,8 @@ const getAllNewsFromRssFeeds = (newsFeeds) => {
 
 // for sort:
 const sortNewsByPublishDate = (a, b) => {
-  let date1 = new Date(a.querySelector("pubDate").innerHTML);
-  let date2 = new Date(b.querySelector("pubDate").innerHTML);
+  let date1 = new Date(a.pubDate);
+  let date2 = new Date(b.pubDate);
   return date1 == date2 ? 0 : date1 < date2 ? 1 : -1;
 };
 
@@ -34,8 +42,7 @@ const getAllNewsWithUniqueGuid = (items) => {
     var containsInUniqueList = false;
     for (let i = 0; i < uniqueNewsList.length; i++) {
       if (
-        uniqueNewsList[i].querySelector("guid").innerHTML ===
-        newsItem.querySelector("guid").innerHTML
+        uniqueNewsList[i].guid === newsItem.guid
       ) {
         containsInUniqueList = true;
         break;
@@ -57,9 +64,9 @@ const displayNews = (tenLatestNews) => {
     // newsLink.style.whiteSpace = "nowrap";
 
     newsLink.style.textDecoration = "none";
-    newsLink.href = item.querySelector("link").innerHTML;
+    newsLink.href = item.link;
     newsLink.target = "_blank";
-    newsLink.innerHTML = item.querySelector("title").innerHTML;
+    newsLink.innerHTML = item.title;
 
     let para = document.createElement("p");
     para.innerHTML = `${index + 1}. \xa0\xa0 `;
