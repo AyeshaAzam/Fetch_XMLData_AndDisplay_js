@@ -1,5 +1,3 @@
-var newsItemsArr = [];
-
 const fetchOneRssFeed = (url) => {
   return fetch(url).then(response => response.text());
 }
@@ -10,36 +8,29 @@ const fetchAllRssFeeds = async () => {
   return Promise.all(feedList.feeds.map(fetchOneRssFeed));
 };
 
-const getAllNewsFromRssFeeds = (newsFeeds) => {
-  newsFeeds.map((newItem) => {
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(newItem, "text/xml");
-    let newsItemList = xmlDoc
-      .getElementsByTagName("channel")[0]
-      .querySelectorAll("item");
+const getAllNewsFromOneRssFeed = (newsFeed) => {
+  const parser = new DOMParser();
+  const xmlDoc = parser.parseFromString(newsFeed, "text/xml");
+  return Array.from(xmlDoc
+    .getElementsByTagName("channel")[0]
+    .querySelectorAll("item"))
+    .filter(item => item.nodeType === 1); // Get rid of the whitespace text nodes
+};
 
-    // Sort and push into new Array
-    for (var i in newsItemList) {
-      if (newsItemList[i].nodeType == 1) {
-        // get rid of the whitespace text nodes
-        newsItemsArr.push(newsItemList[i]);
-      }
-    }
-  });
+const getAllNewsFromRssFeeds = (newsFeeds) => {
+  return newsFeeds.flatMap(getAllNewsFromOneRssFeed);
 };
 
 // for sort:
-const sortNewsByPublishDate = () => {
-  newsItemsArr.sort(function (a, b) {
-    let date1 = new Date(a.querySelector("pubDate").innerHTML);
-    let date2 = new Date(b.querySelector("pubDate").innerHTML);
-    return date1 == date2 ? 0 : date1 < date2 ? 1 : -1;
-  });
+const sortNewsByPublishDate = (a, b) => {
+  let date1 = new Date(a.querySelector("pubDate").innerHTML);
+  let date2 = new Date(b.querySelector("pubDate").innerHTML);
+  return date1 == date2 ? 0 : date1 < date2 ? 1 : -1;
 };
 
-const getAllNewsWithUniqueGuid = () => {
+const getAllNewsWithUniqueGuid = (items) => {
   let uniqueNewsList = [];
-  newsItemsArr.forEach((newsItem) => {
+  items.forEach((newsItem) => {
     var containsInUniqueList = false;
     for (let i = 0; i < uniqueNewsList.length; i++) {
       if (
@@ -47,6 +38,7 @@ const getAllNewsWithUniqueGuid = () => {
         newsItem.querySelector("guid").innerHTML
       ) {
         containsInUniqueList = true;
+        break;
       }
     }
 
@@ -80,10 +72,10 @@ const displayNews = (tenLatestNews) => {
 const displayTenLatestNews = async () => {
   try {
     let res = await fetchAllRssFeeds();
-    getAllNewsFromRssFeeds(res);
-    sortNewsByPublishDate();
-    newsItemsArr = getAllNewsWithUniqueGuid();
-    let tenLatestNews = Array.prototype.slice.call(newsItemsArr).slice(0, 10);
+    const news = getAllNewsFromRssFeeds(res);
+    news.sort(sortNewsByPublishDate);
+    const uniqueItems = getAllNewsWithUniqueGuid(news);
+    let tenLatestNews = uniqueItems.slice(0, 10);
     displayNews(tenLatestNews);
   } catch (error) {
     console.log("Error fetching data", error);
